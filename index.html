@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Advisor Chatbot</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: space-between;
+        }
+
+        h2 {
+            color: #202124;
+            margin: 20px 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        #chatbox {
+            width: 70%;
+            height: 55vh;
+            overflow-y: auto;
+            padding: 20px;
+            background: white;
+            margin: 0 auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .user-message {
+            text-align: right;
+            background: #007bff;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 60%;
+            align-self: flex-end;
+            margin: 8px 0;
+            font-size: 15px;
+            display: inline-block;
+        }
+
+        .bot-message {
+            text-align: left;
+            background: #f1f3f4;
+            color: #202124;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 60%;
+            align-self: flex-start;
+            margin: 8px 0;
+            font-size: 15px;
+            display: inline-block;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            background: transparent;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            width: 55%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease-in-out;
+        }
+
+        input:focus {
+            border-color: #007bff;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        /* Image Upload Styling */
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        #image-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            object-fit: cover;
+            display: none;
+            margin-top: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        @media (max-width: 768px) {
+            #chatbox {
+                width: 90%;
+                height: 50vh;
+            }
+
+            input[type="text"] {
+                width: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Financial Advisor Chatbot</h2>
+
+    <div class="upload-container">
+        <input type="file" id="imageUpload" accept="image/*">
+        <button onclick="uploadImage()">Upload</button>
+        <img id="image-preview">
+    </div>
+
+    <div id="chatbox"></div>
+    
+    <div class="input-container">
+        <input type="text" id="user_input" placeholder="Ask about financial statements...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        function sendMessage() {
+            let userInput = document.getElementById("user_input").value;
+            let chatbox = document.getElementById("chatbox");
+
+            if (userInput.trim() === "") return;
+
+            chatbox.innerHTML += "<p class='user-message'><b>You:</b> " + userInput + "</p>";
+
+            fetch("/", {
+                method: "POST",
+                body: new URLSearchParams({ "user_input": userInput }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatbox.innerHTML += "<p class='bot-message'><b>Bot:</b> " + data.response + "</p>";
+                chatbox.scrollTop = chatbox.scrollHeight;
+                document.getElementById("user_input").value = "";
+            });
+        }
+
+        function uploadImage() {
+            let imageInput = document.getElementById("imageUpload");
+            let file = imageInput.files[0];
+
+            if (!file) {
+                alert("Please select an image first.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("image", file);
+
+            // Show preview
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let preview = document.getElementById("image-preview");
+                preview.src = e.target.result;
+                preview.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.response);
+            });
+        }
+    </script>
+</body>
+</html
